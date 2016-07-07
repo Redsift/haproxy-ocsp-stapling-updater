@@ -280,18 +280,19 @@ if [ -e $CERT.ocsp ]; then
         grep "Next Update:" &>>$TMP/log
 
     if [ $? -eq 0 ]; then
-        CURR_EXP=`$OPENSSL_BIN ocsp -respin $CERT.ocsp -text -noverify | grep "Next Update:" | cut -d ':' -f 2-`
+        CURR_EXP=`$OPENSSL_BIN ocsp -respin $CERT.ocsp -text -noverify | grep "Next Update:" | cut -d ':' -f 2-` 
         CURR_EXP_EPOCH=`date --date="$CURR_EXP" +%s`
 
         if [ $? -ne 0 ]; then
-            Error 3 "can't parse Next Update from current OCSP response"
-        fi
-
-        if [ $CURR_EXP_EPOCH -lt `date +%s` ]; then
-            Debug "Current OCSP response expiration: $CURR_EXP - expired"
-            LogError "current OCSP response is expired: please consider running this script more frequently"
+            # Busybox date typically can't parse this, a TODO
+            LogError "can't parse Next Update from current OCSP response"
         else
-            Debug "Current OCSP response expiration: $CURR_EXP - NOT expired"
+            if [ $CURR_EXP_EPOCH -lt `date +%s` ]; then
+                Debug "Current OCSP response expiration: $CURR_EXP - expired"
+                LogError "current OCSP response is expired: please consider running this script more frequently"
+            else
+                Debug "Current OCSP response expiration: $CURR_EXP - NOT expired"
+            fi        
         fi
     fi
 fi
